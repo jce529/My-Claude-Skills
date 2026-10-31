@@ -7,6 +7,7 @@
 | 스킬 | 한 줄 설명 | 문서 |
 |---|---|---|
 | `jev-model-routing` | 에이전트·plan·task를 어떤 모델(Claude / GPT)에 맡길지 Jev 분류로 정한다 | [USAGE.md](skills/jev-model-routing/USAGE.md) |
+| `phase-session-dispatch` | GSD 매니저가 승인한 phase마다 세션을 포크하고, 각 세션이 jev-model-routing으로 모델을 배정하며 진행하게 한다 | [USAGE.md](skills/phase-session-dispatch/USAGE.md) |
 
 ## 설치 방법 (공통)
 
