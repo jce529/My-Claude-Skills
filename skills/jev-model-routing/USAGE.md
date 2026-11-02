@@ -35,8 +35,9 @@ Windows PowerShell이라면 `~`를 `$HOME`으로 바꿔 쓰면 됩니다.
 
 ### 필요한 도구
 
-- **Jev MCP 서버** (`mcp__jev__jev_classify`, `mcp__jev__jev_noul`, `mcp__jev__jev_decide`). 지연 로드되므로 스킬이 실행될 때 ToolSearch로 스키마를 먼저 불러옵니다.
+- **Jev MCP 서버**: Claude Code 플러그인(claude-jev)의 `mcp__plugin_claude-jev_jev__*`(`jev_ask`, `jev_choice`, `jev_noul`, `jev_score`, `jev_doctor`). 지연 로드되므로 스킬이 실행될 때 ToolSearch로 스키마를 먼저 불러옵니다.
 - **Codex CLI** (GPT 채널을 쓸 때만 필요). 설치와 로그인은 `codex --version`으로 확인합니다.
+- **Antigravity CLI `agy`** (Gemini 4 Argon 채널을 쓸 때만 필요). Antigravity 계정으로 로그인한 상태에서 `agy models`에 `gemini-4-argon-*`가 보여야 합니다.
 
 Jev를 쓸 수 없으면 스킬은 역할별 기본 티어로 대신하고, 로그에 `classifier: fallback`을 남깁니다. 작업은 멈추지 않습니다.
 
@@ -104,7 +105,26 @@ routing:
 | T1 | haiku | gpt-6-luna |
 | T0 | — | gpt-5.6-luna |
 
-스킬 본문의 표는 2026-10-13 기준 `~/.codex/models_cache.json`에서 확인한 값입니다. 최신 값이 다르면 캐시를 우선합니다.
+스킬 본문의 표는 2026-11-02 기준 `~/.codex/models_cache.json` 확인과 실제 호출로 검증한 값입니다(T2는 `gpt-6.1-terra`로 바뀌었습니다). 최신 값이 다르면 캐시를 우선합니다.
+
+**Antigravity 채널 (Gemini 4 Argon, 선택)**
+
+Claude·GPT와 별개의 세 번째 계열입니다. 자동 배정에는 넣지 않았고, 사용자가 지정하거나 호출 템플릿으로 명시적으로 고를 때만 씁니다.
+
+| 티어(가설) | `agy --model` |
+|---|---|
+| T4 | gemini-4-argon-high |
+| T3 | gemini-4-argon-medium |
+| T2 | gemini-4-argon-low |
+
+```bash
+agy -p "<프롬프트>" --model gemini-4-argon-<강도> --mode plan --output-format text
+```
+
+- 기본은 읽기 전용(`--mode plan`)입니다. 파일 수정이 필요할 때만 `--mode accept-edits`를 쓰고 `--add-dir`로 범위를 좁힙니다. `--dangerously-skip-permissions`는 쓰지 않습니다.
+- 티어 배치는 공개 벤치마크 보도를 보고 한 가설입니다. 로그로 보정하기 전까지 고정 사실로 쓰지 않습니다.
+- Argon이 쓴 결과는 Claude나 GPT가, Argon이 검증하면 작성자는 Claude나 GPT가 맡습니다.
+- 구독과 Gemini API 과금은 별개입니다. 목록에 모델이 없거나 호출이 실패하면 Claude·GPT 채널로 폴백합니다.
 
 ## 5. 프로젝트별 설정 (선택)
 
@@ -118,14 +138,16 @@ routing:
 
 ## 6. Windows에서 Codex가 실패할 때
 
-`~/.codex/config.toml`에 `[windows] sandbox = "elevated"`가 있으면 비대화형 `codex exec`에서 쉘 명령이 `setup refresh had errors`로 실패할 수 있습니다. 호출마다 다음 플래그를 붙입니다. 설정 파일은 고치지 않습니다.
+2026-11-02 기준 기본값 `[windows] sandbox = "elevated"` 그대로 쉘·`apply_patch`·vitest가 정상 동작합니다(codex-cli 0.166.0 확인). 설정 파일은 고치지 않습니다.
 
 ```bash
-codex exec -m <모델> -c model_reasoning_effort=medium -c 'windows.sandbox="unelevated"' \
+codex exec -m <모델> -c model_reasoning_effort=medium \
   -s workspace-write -C <작업 폴더> --skip-git-repo-check - < 프롬프트파일 > 출력파일 2>&1
 ```
 
-`unelevated`는 폴더 경계 보호가 약하므로 `-C`로 범위를 좁히고, 끝난 뒤 `git status`로 범위 밖 변경이 없는지 확인합니다.
+- 작성자와 검증자 모두 `-s workspace-write`를 씁니다. `read-only`는 vitest 등이 시스템 Temp에 폴더를 만들다 `EPERM`으로 실패합니다. 대신 `-C`로 범위를 좁히고, 프롬프트에 수정 허용 파일 목록을 적고, 끝난 뒤 `git status`로 범위 밖 변경이 없는지 확인합니다.
+- 테스트는 `npx vitest`가 아니라 `node node_modules/vitest/vitest.mjs run <파일>`로 호출하게 합니다(PowerShell에서 `npx.ps1`이 실행 정책에 막힙니다).
+- 출력에 `setup refresh`/`Rejected`가 보이면 `-c 'windows.sandbox="unelevated"'`를 붙여 1회 재시도하고, 그래도 실패하면 Claude로 폴백합니다.
 
 ## 7. 주의사항
 
