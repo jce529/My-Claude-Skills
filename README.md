@@ -8,6 +8,7 @@
 |---|---|---|
 | `jev-model-routing` | 에이전트·plan·task를 어떤 모델(Claude / GPT / Gemini 4 Argon)에 맡길지 Jev 분류로 정한다 | [USAGE.md](skills/jev-model-routing/USAGE.md) |
 | `phase-session-dispatch` | GSD 매니저가 승인한 phase마다 세션을 포크하고, 각 세션이 jev-model-routing으로 모델을 배정하며 진행하게 한다 | [USAGE.md](skills/phase-session-dispatch/USAGE.md) |
+| `agy-execute` | GSD에서 설계·검증은 Claude Code가, 승인된 PLAN.md의 실제 코딩은 agy CLI가 맡도록 위임한다 | [USAGE.md](skills/agy-execute/USAGE.md) |
 
 ## 설치 방법 (공통)
 
